@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-import random, os.path
+import random, os.path, math
 
 #import basic pygame modules
 import pygame
 from pygame.locals import *
-
-import GameAgent
+import Agent
 
 #see if we can load more than standard BMP
 if not pygame.image.get_extended():
@@ -17,7 +16,7 @@ if not pygame.image.get_extended():
 MAX_SHOTS      = 2      #most player bullets onscreen
 ALIEN_ODDS     = 22     #chances a new alien appears
 BOMB_ODDS      = 60    #chances a new bomb will drop
-ALIEN_RELOAD   = 1200     #frames between new aliens
+ALIEN_RELOAD   = 12     #frames between new aliens
 SCREENRECT     = Rect(0, 0, 640, 480)
 SCORE          = 0
 PLAY_TIMES = 0
@@ -109,7 +108,7 @@ class Alien(pygame.sprite.Sprite):
         self.rect.move_ip(self.facing, 0)
         if not SCREENRECT.contains(self.rect):
             self.facing = -self.facing;
-            #self.rect.top = self.rect.bottom + 1
+            self.rect.top = self.rect.bottom + 1
             self.rect = self.rect.clamp(SCREENRECT)
         self.frame = self.frame + 1
         self.image = self.images[self.frame//self.animcycle%3]
@@ -253,11 +252,17 @@ def main(winstyle = 0):
 #Agent: var
     direction = 0
     firing = 0
-    agent = GameAgent.GameAgent()
-    agent.greedy = 1
-    agent.learning_rate = 0.5
-    agent.discount_factor = 0.5
+    agent = Agent.Agent()
+    #agent.greedy = 1
+    #agent.learning_rate = 0.5
+    #agent.discount_factor = 0.5
     agent.load_data()
+    prev_state = {}
+    curr_state = {}
+    prev_action = ''
+    curr_action = ''
+    reward = 0
+    is_killed = False
 ###
     while player.alive():
 
@@ -306,6 +311,7 @@ def main(winstyle = 0):
             boom_sound.play()
             Explosion(alien)
             SCORE = SCORE + 1
+            is_killed = True
 
         for bomb in pygame.sprite.spritecollide(player, bombs, 1):
             boom_sound.play()
@@ -319,30 +325,53 @@ def main(winstyle = 0):
             bomb = {}
             bomb['dx'] = bombs.sprites()[i].rect.centerx - player.rect.centerx
             bomb['dy'] = bombs.sprites()[i].rect.centery - player.rect.centery
-            bomb['speed'] = bombs.sprites()[i].speed
-            if abs(bomb['dx']) < player.rect.width and abs(bomb['dy']) < 240:
+            bomb['dx'] = math.floor(bomb['dx'] / bombs.sprites()[i].rect.width)
+            bomb['dy'] = math.floor(bomb['dy'] / bombs.sprites()[i].rect.height)
+            if abs(bomb['dx'] * bombs.sprites()[i].rect.width) < player.rect.width:
                 bomb_infos.append(bomb)
-            
-        agent_state = {
-            'speed': player.speed,
+
+        alien = {}
+        if len(aliens.sprites()) > 0:
+            alien['dx'] = aliens.sprites()[0].rect.centerx - player.rect.centerx
+            alien['dy'] = aliens.sprites()[0].rect.centery - player.rect.centery
+        for i in range(1, len(aliens.sprites())):
+            if abs(aliens.sprites()[i].rect.centery - player.rect.centery) < abs(alien['dy']):
+                alien['dx'] = aliens.sprites()[i].rect.centerx - player.rect.centerx
+                alien['dy'] = aliens.sprites()[i].rect.centery - player.rect.centery
+        if len(alien) > 0:
+            alien['dx'] = math.floor(alien['dx'] / 50)
+            alien['dy'] = math.floor(alien['dy'] / 50)
+        
+        prev_state = curr_state
+        curr_state = {
             'bomb_infos': bomb_infos,
-            'alive': player.alive()
+            'alien': alien
             }
-        agent.add_state(agent_state)
+        agent.add_state(curr_state, ['L', 'R', 'F'])
 ###
 #Agent: Get action
         #direction: left = -1, right = 1
         #firing = 1
-        agent_action = agent.get_action(agent_state)
+        prev_action = curr_action
+        curr_action = agent.get_action(curr_state)
         direction = 0
         firing = 0
-        if agent_action == 'L':
+        if curr_action == 'L':
             direction = -1
-        elif agent_action == 'R':
+        elif curr_action == 'R':
             direction = 1
+        elif curr_action == 'F':
+            firing = 1
 ###
 #Agent: Study
-        agent.study(agent_state, agent_action)
+        if prev_action != '':
+            reward = 0
+            if not player.alive():
+                reward = -999
+            elif is_killed:
+                is_killed = False
+                reward = 1
+            agent.study(prev_state, prev_action, curr_state, reward)
 ###
             
         #draw the scene
@@ -350,13 +379,13 @@ def main(winstyle = 0):
         pygame.display.update(dirty)
 
         #cap the framerate
-        clock.tick(6000)
+        clock.tick(60)
 
 #restart game constants
     global PLAY_TIMES
     PLAY_TIMES = PLAY_TIMES + 1
-    print('SCORE(' + str(PLAY_TIMES) + '): ' + str(SCORE) + ', ' + str(len(agent.Q)))
-    SCORE          = 0
+    print('SCORE(' + str(PLAY_TIMES) + '): ' + str(SCORE) + ', ' + str(len(agent.Q.keys())))
+    SCORE = 0
     if PLAY_TIMES % 10 == 0:
         agent.save_data()
         print('saved.')
@@ -365,12 +394,12 @@ def main(winstyle = 0):
         main()
 ###
     
-    if pygame.mixer:
-        pygame.mixer.music.fadeout(1000)
-    pygame.time.wait(1000)
+#    if pygame.mixer:
+#        pygame.mixer.music.fadeout(1000)
+#    pygame.time.wait(1000)
     pygame.quit()
 
 
 #call the "main" function if running this script
-if __name__ == '__main__': main()
-
+if __name__ == '__main__':
+    main()

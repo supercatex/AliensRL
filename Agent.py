@@ -4,8 +4,6 @@ import hashlib, random, time, json, os
 class Agent:
 
     #Q-learning
-    observations = []   #observations
-    states = []         #states
     learning_rate = 0   #alpha
     discount_factor = 1 #gamma
     greedy = 0          #greedy
@@ -13,6 +11,7 @@ class Agent:
 
     #data files
     filename = './data/data.json'
+
 
     #constructor
     def __init__(self,
@@ -23,31 +22,7 @@ class Agent:
         self.discount_factor = discount_factor
         self.greedy = greedy
 
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#Agent rules waiting to overwirte.
-    def get_actions(self, observations):
-        if observations['S'] == 1:
-            return ['right']
-        elif observations['S'] == 6:
-            return ['left']
-        else:
-            return ['left', 'right']
-        
-    def get_next_observations(self, observations, action):
-        next_observations = observations.copy()
-        if action == 'left':
-            next_observations['S'] -= 1
-        elif action == 'right':
-            next_observations['S'] += 1
-        self.add_state(next_observations)
-        return next_observations
 
-    def get_reward(self, observations, action):
-        if observations['S'] == 5 and action == 'right':
-            return 1
-        return 0
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
     #Load data.
     #params: none
     #return: void
@@ -65,6 +40,7 @@ class Agent:
             self.observations = temp['0']
             self.Q = temp['1']
 
+
     #Save data.
     #params: none
     #return: void
@@ -74,40 +50,38 @@ class Agent:
         f.write(data)
         f.close()
 
+
     #Q-learning study method.
     #params:
     #   observations: dict
     #   action: string
+    #   next_observations: dict
+    #   reward: number
     #return: next observations
-    def study(self, observations, action):
+    def study(self, observations, action, next_observations, reward):
         state = self.get_key(observations)
 
-        next_observations = self.get_next_observations(observations, action)
         next_state = self.get_key(next_observations)
         next_action = self.get_optimal_action(next_observations)
         
         #Q[n]
         old_value = self.Q[state][action]
-        #R[n]
-        reward = self.get_reward(observations, action)
         #Q[n+1]
         future_value = self.Q[next_state][next_action]
 
         #Q[n] <- Q[n] + a * (R[n] + y * Q[n+1] - Q[n])
         self.Q[state][action] = old_value + self.learning_rate * (reward + self.discount_factor * future_value - old_value) 
 
-        #save data
-        #self.save_data()
-
         return next_observations
+
 
     #print Q.
     #params: none
     #return: void
     def print_Q(self):
-        for i in range(0, len(self.observations)):
-            state = self.get_key(self.observations[i])
-            print(str(self.observations[i]) + ': ' + str(self.Q[state]))
+        for state, actions in self.Q.iteritems():
+            print(str(state) + ': ' + str(actions))
+
 
     #get a randomize action by observations.
     #params:
@@ -120,6 +94,7 @@ class Agent:
         
         rand = random.randint(0, len(actions) - 1)
         return actions[rand]
+
 
     #get a optimal action by observations.
     #params:
@@ -146,6 +121,7 @@ class Agent:
                 max_value = self.Q[state][actions[i]]
         return action
 
+
     #get a action by observations.
     #params:
     #   observations : dict
@@ -155,25 +131,24 @@ class Agent:
             return self.get_optimal_action(observations)
         else:
             return self.get_random_action(observations)
+
     
     #add a new state
     #params:
     #   observations : dict
     #   actions : array
     #return: void
-    def add_state(self, observations):
+    def add_state(self, observations, actions):
         state = self.get_key(observations)
         if self.Q.has_key(state):
             return
-        
-        self.states.append(state)
-        self.observations.append(observations)
-        
+
         #renew Q
         self.Q[state] = {}
-        actions = self.get_actions(observations)
+        #actions = self.get_actions(observations)
         for i in range(0, len(actions)):
             self.Q[state][actions[i]] = 0
+
 
     #named state by observations
     #params:
@@ -181,24 +156,57 @@ class Agent:
     #return: string
     def get_key(self, observations):
         temp = ''
-        for key, value in observations.iteritems():
-            temp += str(key) + ':' + str(value) + ','
+        keys = sorted(observations.keys())
+        for i in range(0, len(keys)):
+            temp += str(keys[i]) + ':' + str(observations[keys[i]])
         md5 = hashlib.md5(temp.encode('utf-8')).hexdigest()
         return md5
 
+
 #main function for testing.
 if __name__ == '__main__':
-    agent = Agent()
-    agent.load_data()
     
+    agent = Agent()
     for i in range(0, 10):
-        state = {'S': 1}
+        
+        position = 1
+        prev_state = {}
+        curr_state = {}
+        prev_action = ''
+        curr_action = ''
+        reward = 0
+        
         while True:
-            print(str(state))
-            if state['S'] == 6: break;
-            agent.add_state(state)
-            action = agent.get_action(state)
-            state = agent.study(state, action)
+            #Renew state
+            prev_state = curr_state
+            curr_state = {'S': position}
+            if position == 1:
+                agent.add_state(curr_state, ['R'])
+            elif position == 6:
+                agent.add_state(curr_state, ['L'])
+            else:
+                agent.add_state(curr_state, ['L', 'R'])
+
+            #Renew action
+            prev_action = curr_action
+            curr_action = agent.get_action(curr_state)
+            if curr_action == 'L':
+                position = position - 1
+            elif curr_action == 'R':
+                position = position + 1
+                
+            #Study
+            if prev_action != '':
+                reward = 0
+                if prev_state['S'] == 5 and prev_action == 'R':
+                    reward = 1
+                agent.study(prev_state, prev_action, curr_state, reward)
+                if prev_state['S'] == 6:
+                    break
+                
+            print(curr_state)
             time.sleep(0.05)
+            
         agent.print_Q()
+        
     print('END')

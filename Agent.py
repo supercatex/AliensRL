@@ -11,7 +11,7 @@ class Agent:
 
     #data files
     filename = './data/data.json'
-
+    training = 0
 
     #constructor
     def __init__(self,
@@ -37,7 +37,7 @@ class Agent:
         f.close()
         if len(data) > 0:
             temp = json.loads(data[0])
-            self.observations = temp['0']
+            self.training = long(temp['0'])
             self.Q = temp['1']
 
 
@@ -45,7 +45,7 @@ class Agent:
     #params: none
     #return: void
     def save_data(self):
-        data = json.dumps({'0': [], '1': self.Q})
+        data = json.dumps({'0': self.training, '1': self.Q})
         f = open(self.filename, 'w')
         f.write(data)
         f.close()
@@ -72,6 +72,7 @@ class Agent:
         #Q[n] <- Q[n] + a * (R[n] + y * Q[n+1] - Q[n])
         self.Q[state][action] = old_value + self.learning_rate * (reward + self.discount_factor * future_value - old_value) 
 
+        #self.training = self.training + 1
         return next_observations
 
 
@@ -82,6 +83,14 @@ class Agent:
         for state, actions in self.Q.iteritems():
             print(str(state) + ': ' + str(actions))
 
+    def get_Q_zero_count(self):
+        count = 0
+        for state, actions in self.Q.iteritems():
+            for action, value in actions.iteritems():
+                if value == 0:
+                    count += 1
+        return count
+                
 
     #get a randomize action by observations.
     #params:

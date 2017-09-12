@@ -1,7 +1,7 @@
 import numpy as np
 import hashlib, random, time, json, os
 
-class Agent:
+class QLearningAgent:
 
     #Q-learning
     learning_rate = 0   #alpha
@@ -37,7 +37,7 @@ class Agent:
         f.close()
         if len(data) > 0:
             temp = json.loads(data[0])
-            self.training = long(temp['0'])
+            self.training = int(temp['0'])
             self.Q = temp['1']
 
 
@@ -80,16 +80,32 @@ class Agent:
     #params: none
     #return: void
     def print_Q(self):
-        for state, actions in self.Q.iteritems():
+        for state, actions in self.Q.items():
             print(str(state) + ': ' + str(actions))
 
     def get_Q_zero_count(self):
         count = 0
-        for state, actions in self.Q.iteritems():
-            for action, value in actions.iteritems():
+        for state, actions in self.Q.items():
+            for action, value in actions.items():
                 if value == 0:
                     count += 1
         return count
+
+    def get_Q_max_value(self):
+        v = 0
+        for state, actions in self.Q.items():
+            for action, value in actions.items():
+                if value > v:
+                    v = value
+        return v
+
+    def get_Q_min_value(self):
+        v = 0
+        for state, actions in self.Q.items():
+            for action, value in actions.items():
+                if value < v:
+                    v = value
+        return v
                 
 
     #get a randomize action by observations.
@@ -98,7 +114,7 @@ class Agent:
     #return: string
     def get_random_action(self, observations):
         state = self.get_key(observations)
-        actions = self.Q[state].keys()
+        actions = list(self.Q[state].keys())
         if len(actions) == 0: return ''
         
         rand = random.randint(0, len(actions) - 1)
@@ -111,7 +127,7 @@ class Agent:
     #return: string
     def get_optimal_action(self, observations):
         state = self.get_key(observations)
-        actions = self.Q[state].keys()
+        actions = list(self.Q[state].keys())
         if len(actions) == 0: return ''
 
         #random action order
@@ -149,7 +165,7 @@ class Agent:
     #return: void
     def add_state(self, observations, actions):
         state = self.get_key(observations)
-        if self.Q.has_key(state):
+        if state in self.Q:
             return
 
         #renew Q
@@ -165,7 +181,7 @@ class Agent:
     #return: string
     def get_key(self, observations):
         temp = ''
-        keys = sorted(observations.keys())
+        keys = sorted(list(observations.keys()))
         for i in range(0, len(keys)):
             temp += str(keys[i]) + ':' + str(observations[keys[i]])
         md5 = hashlib.md5(temp.encode('utf-8')).hexdigest()
@@ -175,7 +191,7 @@ class Agent:
 #main function for testing.
 if __name__ == '__main__':
     
-    agent = Agent()
+    agent = QLearningAgent()
     for i in range(0, 10):
         
         position = 1
@@ -217,5 +233,6 @@ if __name__ == '__main__':
             time.sleep(0.05)
             
         agent.print_Q()
+        print(agent.get_Q_zero_count())
         
     print('END')

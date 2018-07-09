@@ -386,7 +386,7 @@ def main(winstyle = 0):
             else:
                 ddx = math.ceil(dx / alien_list[i].rect.width)
             ddy = math.ceil(dy / alien_list[i].rect.height)
-            alien_state += '(' + str(ddx) + ',' + str(ddy) + ')'
+            alien_state += '(' + str(ddx) + ',' + str(ddy) + ',' + str(alien_list[i].facing) + ')'
             cur_alien_count += 1
             if target_alien != '' and is_killed == False and alien_list[i].rect.centery > target_alien.rect.centery:
                 is_missed = True
@@ -397,9 +397,9 @@ def main(winstyle = 0):
         prev_state = curr_state
         curr_state = {
             'bomb': bomb_state,
-            'alien': alien_state,
-            'firing': player.reloading
-            }
+            'alien': alien_state
+            #'firing': len(shots)
+        }
         #print(curr_state)
         agent.add_state(curr_state, ['L', 'R', 'F'])
         ###
@@ -421,10 +421,10 @@ def main(winstyle = 0):
         if prev_action != '':
             reward = 0
             if is_missed:
-                reward = -50
+                #reward = -50
                 is_missed = False
             if is_killed:
-                reward = 200
+                reward = 1
                 is_killed = False
             if not player.alive():
                 reward = -1000
@@ -437,7 +437,7 @@ def main(winstyle = 0):
         pygame.display.update(dirty)
 
         #cap the framerate
-        clock.tick(60)
+        clock.tick(6000)
 
     #restart game constants
     global PLAY_TIMES
@@ -448,11 +448,16 @@ def main(winstyle = 0):
           ', S: ' + str(len(agent.Q.keys())) + \
           ', Zero: ' + str(agent.get_Q_zero_count())
           )
+    agent.save_data()
 ###
     
 #    if pygame.mixer:
 #        pygame.mixer.music.fadeout(1000)
 #    pygame.time.wait(1000)
+    f = open ( 'score.txt' , 'w+' )
+    f.write ( str ( SCORE ) )
+    f.close()
+
     pygame.quit()
 
 

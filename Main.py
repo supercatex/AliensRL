@@ -437,7 +437,7 @@ def main(winstyle = 0):
         pygame.display.update(dirty)
 
         #cap the framerate
-        clock.tick(6000)
+        clock.tick(60)
 
     #restart game constants
     global PLAY_TIMES

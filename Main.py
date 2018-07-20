@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import random, os.path, math
+import random, os.path, math, json, time
 
 #import basic pygame modules
 import pygame
@@ -180,6 +180,7 @@ class Score(pygame.sprite.Sprite):
 agent = Agent.QLearningAgent()
 agent.load_data()
 def main(winstyle = 0):
+    ts = time.time()
     # Initialize pygame
     pygame.init()
     if pygame.mixer and not pygame.mixer.get_init():
@@ -356,7 +357,7 @@ def main(winstyle = 0):
             else:
                 ddx = math.floor(dx / bomb_list[i].rect.width)
             ddy = math.ceil(dy / bomb_list[i].rect.height)
-            bomb_state += '(' + str(ddx) + ',' + str(ddy) + ')'
+            bomb_state += '[' + str(ddx) + ',' + str(ddy) + ']'
             cur_bomb_count += 1
             if cur_bomb_count >= max_bomb_count:
                 break
@@ -378,15 +379,17 @@ def main(winstyle = 0):
         max_alien_count = 1
         alien_state = ''
         target_alien = ''
+        facing_state = ''
         for i in range(0, len(alien_list)):
             dx = alien_list[i].rect.centerx - player.rect.centerx
             dy = player.rect.centery - alien_list[i].rect.centery
             if dx < 0:
-                ddx = math.floor(dx / alien_list[i].rect.width)
+                ddx = math.floor(dx / (alien_list[i].rect.width / 4))
             else:
-                ddx = math.ceil(dx / alien_list[i].rect.width)
+                ddx = math.ceil(dx / (alien_list[i].rect.width / 4))
             ddy = math.ceil(dy / alien_list[i].rect.height)
-            alien_state += '(' + str(ddx) + ',' + str(ddy) + ',' + str(alien_list[i].facing) + ')'
+            alien_state += '[' + str(ddx) + ',' + str(ddy) + ']'
+            facing_state += '[' + str(alien_list[i].facing) + ']'
             cur_alien_count += 1
             if target_alien != '' and is_killed == False and alien_list[i].rect.centery > target_alien.rect.centery:
                 is_missed = True
@@ -395,11 +398,16 @@ def main(winstyle = 0):
                 break    
         
         prev_state = curr_state
-        curr_state = {
-            'bomb': bomb_state,
-            'alien': alien_state
-            #'firing': len(shots)
-        }
+        curr_state = {}
+        if len(bomb_state) > 0:
+            curr_state.update({'S1': json.loads(bomb_state)})
+        if len(alien_state) > 0:
+            curr_state.update({'S2': json.loads(alien_state)})
+        if len(facing_state) > 0:
+            curr_state.update({'S3': json.loads(facing_state)})
+        if len(shots) > 0:
+            curr_state.update({'S4': len(shots)})
+            
         #print(curr_state)
         agent.add_state(curr_state, ['L', 'R', 'F'])
         ###
@@ -437,7 +445,7 @@ def main(winstyle = 0):
         pygame.display.update(dirty)
 
         #cap the framerate
-        clock.tick(60)
+        clock.tick(60000)
 
     #restart game constants
     global PLAY_TIMES
@@ -457,10 +465,27 @@ def main(winstyle = 0):
     f = open ( 'score.txt' , 'w+' )
     f.write ( str ( SCORE ) )
     f.close()
+    
+    te = time.time()
+    f = open ( 'score.txt' , 'r' )
+    score = f.readline()
+    f.close()
+    s = 'ROUND, ' + str ( agent.training ) + \
+        ', score, ' + str ( SCORE ) + \
+        ', time, ' + str ( te - ts )
+    print ( s )
+    f = open ( 'log.txt' , 'a' )
+    f.write ( s )
+    f.write ( '\n' )
+    f.close()
 
-    pygame.quit()
+    SCORE = 0
+    
+    #pygame.quit()
 
 
 #call the "main" function if running this script
 if __name__ == '__main__':
-    main()
+    while True:
+        main()
+    pygame.quit()

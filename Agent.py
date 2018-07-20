@@ -13,6 +13,7 @@ class QLearningAgent:
     filename = './data/data.json'
     training = 0
 
+
     #constructor
     def __init__(self,
                  learning_rate = 0.1,
@@ -168,6 +169,35 @@ class QLearningAgent:
         if state in self.Q:
             return
 
+#         print ( state )
+#         print ( observations )
+        
+#         existed_keys = {}
+#         existed_errs = 0
+#         for key1, val1 in self.Q.items():
+#             obj1 = json.loads(key1)
+#             temp = {}
+#             errs = 0
+#             for key2, val2 in observations.items():
+#                 if key2 in obj1:
+#                     temp.update({key2: obj1[key2]})
+#                     errs += np.mean((np.array(obj1[key2]) - np.array(val2)) ** 2)
+#             if len(temp) > len(existed_keys):
+#                 existed_keys = temp
+#                 existed_errs = errs
+#             elif len(temp) == len(existed_keys):
+#                 if existed_errs > errs:
+#                     existed_keys = temp
+#                     existed_errs = errs
+#         
+#         if len(existed_keys) > 0:
+#             temp = self.get_key(existed_keys)
+#             if temp in self.Q:
+#                 self.Q[state] = {}
+#                 for i in range(0, len(actions)):
+#                     self.Q[state][actions[i]] = self.Q[temp][actions[i]]
+#                 return
+        
         #renew Q
         self.Q[state] = {}
         #actions = self.get_actions(observations)
@@ -180,12 +210,14 @@ class QLearningAgent:
     #   observations : dict
     #return: string
     def get_key(self, observations):
-        temp = ''
+        temp = '{'
         keys = sorted(list(observations.keys()))
-        for i in range(0, len(keys)):
-            temp += str(keys[i]) + ':' + str(observations[keys[i]])
-        md5 = hashlib.md5(temp.encode('utf-8')).hexdigest()
-        return md5
+        for i in range(0, len(keys) - 1):
+            temp += '"' + str(keys[i]) + '": ' + str(observations[keys[i]]) + ', '
+        if len(keys) > 0:
+            temp += '"' + str(keys[len(keys) - 1]) + '": ' + str(observations[keys[len(keys) - 1]]) + ''
+        temp += '}'
+        return temp
 
 
 #main function for testing.
@@ -204,7 +236,7 @@ if __name__ == '__main__':
         while True:
             #Renew state
             prev_state = curr_state
-            curr_state = {'S': position}
+            curr_state = {'S1': position}
             if position == 1:
                 agent.add_state(curr_state, ['R'])
             elif position == 6:
@@ -223,10 +255,10 @@ if __name__ == '__main__':
             #Study
             if prev_action != '':
                 reward = 0
-                if prev_state['S'] == 5 and prev_action == 'R':
+                if prev_state['S1'] == 5 and prev_action == 'R':
                     reward = 1
                 agent.study(prev_state, prev_action, curr_state, reward)
-                if prev_state['S'] == 6:
+                if prev_state['S1'] == 6:
                     break
                 
             print(curr_state)

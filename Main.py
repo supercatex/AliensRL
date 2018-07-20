@@ -445,7 +445,7 @@ def main(winstyle = 0):
         pygame.display.update(dirty)
 
         #cap the framerate
-        clock.tick(60000)
+        clock.tick(60)
 
     #restart game constants
     global PLAY_TIMES
@@ -481,11 +481,9 @@ def main(winstyle = 0):
 
     SCORE = 0
     
-    #pygame.quit()
+    pygame.quit()
 
 
 #call the "main" function if running this script
 if __name__ == '__main__':
-    while True:
-        main()
-    pygame.quit()
+    main()

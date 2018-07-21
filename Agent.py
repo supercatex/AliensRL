@@ -1,6 +1,7 @@
 import numpy as np
 import hashlib, random, time, json, os
 
+
 class QLearningAgent:
 
     #Q-learning
@@ -225,7 +226,7 @@ if __name__ == '__main__':
     
     agent = QLearningAgent()
     for i in range(0, 10):
-        
+        print('Round:', i + 1)
         position = 1
         prev_state = {}
         curr_state = {}
@@ -255,16 +256,14 @@ if __name__ == '__main__':
             #Study
             if prev_action != '':
                 reward = 0
-                if prev_state['S1'] == 5 and prev_action == 'R':
+                if curr_state['S1'] == 6:
                     reward = 1
                 agent.study(prev_state, prev_action, curr_state, reward)
-                if prev_state['S1'] == 6:
-                    break
                 
             print(curr_state)
-            time.sleep(0.05)
+            time.sleep(0.1)
             
-        agent.print_Q()
-        print(agent.get_Q_zero_count())
+            if reward:
+                break
         
     print('END')

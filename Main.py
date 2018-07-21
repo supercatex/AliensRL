@@ -481,9 +481,9 @@ def main(winstyle = 0):
 
     SCORE = 0
     
-    pygame.quit()
+    #pygame.quit()
 
 
 #call the "main" function if running this script
 if __name__ == '__main__':
-    main()
+	main()

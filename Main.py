@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import random, os.path, math, json, time
+import random, os.path, math, json, time, sys
 
 #import basic pygame modules
 import pygame
@@ -20,6 +20,8 @@ ALIEN_RELOAD   = 12   #frames between new aliens
 SCREENRECT     = Rect(0, 0, 640, 480)
 SCORE          = 0
 PLAY_TIMES = 0
+FRAME_RATE = 60
+MODE = 0
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 
@@ -284,9 +286,12 @@ def main(winstyle = 0):
         all.update()
         
         #handle player input
-#        direction = keystate[K_RIGHT] - keystate[K_LEFT]
+        if MODE != 0:
+            direction = keystate[K_RIGHT] - keystate[K_LEFT]
+            firing = keystate[K_SPACE]
+        
         player.move(direction)
-#        firing = keystate[K_SPACE]
+        
         if not player.reloading and firing and len(shots) < MAX_SHOTS:
             Shot(player.gunpos())
             shoot_sound.play()
@@ -407,45 +412,46 @@ def main(winstyle = 0):
             curr_state.update({'S3': json.loads(facing_state)})
         if len(shots) > 0:
             curr_state.update({'S4': len(shots)})
-            
-        #print(curr_state)
-        agent.add_state(curr_state, ['L', 'R', 'F'])
-        ###
-        #Agent: Get action
-        #direction: left = -1, right = 1
-        #firing = 1
-        prev_action = curr_action
-        curr_action = agent.get_action(curr_state)
-        direction = 0
-        firing = 0
-        if curr_action == 'L':
-            direction = -1
-        elif curr_action == 'R':
-            direction = 1
-        elif curr_action == 'F':
-            firing = 1
-        ###
-        #Agent: Study
-        if prev_action != '':
-            reward = 0
-            if is_missed:
-                #reward = -50
-                is_missed = False
-            if is_killed:
-                reward = 1
-                is_killed = False
-            if not player.alive():
-                reward = -1000
-
-            agent.study(prev_state, prev_action, curr_state, reward)
-        ###
+        
+        if MODE == 0:
+            #print(curr_state)
+            agent.add_state(curr_state, ['L', 'R', 'F'])
+            ###
+            #Agent: Get action
+            #direction: left = -1, right = 1
+            #firing = 1
+            prev_action = curr_action
+            curr_action = agent.get_action(curr_state)
+            direction = 0
+            firing = 0
+            if curr_action == 'L':
+                direction = -1
+            elif curr_action == 'R':
+                direction = 1
+            elif curr_action == 'F':
+                firing = 1
+            ###
+            #Agent: Study
+            if prev_action != '':
+                reward = 0
+                if is_missed:
+                    #reward = -50
+                    is_missed = False
+                if is_killed:
+                    reward = 1
+                    is_killed = False
+                if not player.alive():
+                    reward = -1000
+    
+                agent.study(prev_state, prev_action, curr_state, reward)
+            ###
             
         #draw the scene
         dirty = all.draw(screen)
         pygame.display.update(dirty)
 
         #cap the framerate
-        clock.tick(60)
+        clock.tick(FRAME_RATE)
 
     #restart game constants
     global PLAY_TIMES
@@ -486,5 +492,15 @@ def main(winstyle = 0):
 
 #call the "main" function if running this script
 if __name__ == '__main__':
-	#while True:
-	main()
+    if len(sys.argv) > 1:
+        FRAME_RATE = int(sys.argv[1])
+    if len(sys.argv) > 2:
+        MODE = int(sys.argv[2])
+    
+    LOOP = False
+    if len(sys.argv) > 3:
+        LOOP = True
+    
+    main()
+    while LOOP:
+        main()

@@ -22,6 +22,7 @@ SCORE          = 0
 PLAY_TIMES = 0
 FRAME_RATE = 60
 MODE = 0
+LOOP = False
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 
@@ -487,7 +488,8 @@ def main(winstyle = 0):
 
     SCORE = 0
     
-    pygame.quit()
+    if LOOP == False:
+        pygame.quit()
 
 
 #call the "main" function if running this script
@@ -496,8 +498,7 @@ if __name__ == '__main__':
         FRAME_RATE = int(sys.argv[1])
     if len(sys.argv) > 2:
         MODE = int(sys.argv[2])
-    
-    LOOP = False
+
     if len(sys.argv) > 3:
         LOOP = True
     

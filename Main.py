@@ -486,4 +486,5 @@ def main(winstyle = 0):
 
 #call the "main" function if running this script
 if __name__ == '__main__':
+	#while True:
 	main()

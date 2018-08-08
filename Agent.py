@@ -165,8 +165,9 @@ class QLearningAgent:
     #   observations : dict
     #   actions : array
     #return: void
-    def add_state(self, observations, actions):
+    def add_state(self, observations, actions, f):
         state = self.get_key(observations)
+        ff = self.get_key(f)
         if state in self.Q:
             return
 
@@ -203,7 +204,10 @@ class QLearningAgent:
         self.Q[state] = {}
         #actions = self.get_actions(observations)
         for i in range(0, len(actions)):
-            self.Q[state][actions[i]] = 0
+            if ff not in self.Q:
+                self.Q[state][actions[i]] = 0
+            else:
+                self.Q[state][actions[i]] = self.Q[ff][actions[i]]
 
 
     #named state by observations

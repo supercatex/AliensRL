@@ -416,7 +416,7 @@ def main(winstyle = 0):
         
         if MODE == 0:
             #print(curr_state)
-            agent.add_state(curr_state, ['L', 'R', 'F'])
+            agent.add_state(curr_state, ['L', 'R', 'F'], prev_state)
             ###
             #Agent: Get action
             #direction: left = -1, right = 1
